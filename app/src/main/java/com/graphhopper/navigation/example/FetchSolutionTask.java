@@ -1,6 +1,7 @@
 package com.graphhopper.navigation.example;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.graphhopper.directions.api.client.ApiException;
 import com.graphhopper.directions.api.client.api.SolutionApi;
@@ -34,6 +35,8 @@ public class FetchSolutionTask extends AsyncTask<FetchSolutionConfig, Void, List
         SolutionApi api = new SolutionApi();
 
         try {
+            Log.v("n_log_aparu_driver", "ghKey = " + String.valueOf(ghKey));
+            Log.v("n_log_aparu_driver", "solutions[0].jobId = " + String.valueOf(solutions[0].jobId));
             com.graphhopper.directions.api.client.model.Response res = api.getSolution(ghKey, solutions[0].jobId);
             List<Route> routes = res.getSolution().getRoutes();
 

@@ -15,6 +15,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -191,6 +192,7 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
     }
 
     private void handleIntent(Intent intent) {
+        Log.v("n_log_aparu_driver", "handleIntent 00");
         if (intent != null) {
             Uri data = intent.getData();
             if (data != null && "graphhopper.com".equals(data.getHost())) {
@@ -211,6 +213,7 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
                         }
 
                         setStartFromLocationToSharedPreferences(false);
+                        Log.v("n_log_aparu_driver", "updateRouteAfterWaypointChange 01");
                         updateRouteAfterWaypointChange();
                     }
                     // https://graphhopper.com/api/1/vrp/solution/e7fb8a9b-e441-4ec2-a487-20788e591bb3?vehicle_id=1&key=[KEY]
@@ -218,6 +221,7 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
                         clearRoute();
                         //Open Vrp Url
                         List<String> pathSegments = data.getPathSegments();
+                        Log.v("n_log_aparu_driver", "updateRouteAfterWaypointChange 01");
                         fetchVrpSolution(pathSegments.get(pathSegments.size() - 1), data.getQueryParameter("vehicle_id"));
                     }
                 }
@@ -279,6 +283,8 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
 
         showLoading();
         new FetchSolutionTask(this, getString(R.string.gh_key)).execute(new FetchSolutionConfig(currentJobId, currentVehicleId));
+        // new FetchSolutionTask(this, getString(R.string.gh_key)).execute(new FetchSolutionConfig("job_id", "api_key"));
+        // new FetchSolutionTask(this, getString(R.string.gh_key)).execute(new FetchSolutionConfig("d62fcadd-c84a-4298-90b5-28550125bec5", getString(R.string.gh_key)));
     }
 
     @Override
@@ -316,12 +322,16 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
 
     private void clearRoute() {
         waypoints.clear();
-        mapRoute.removeRoute();
-        route = null;
-        if (currentMarker != null) {
-            mapboxMap.removeMarker(currentMarker);
-            currentMarker = null;
+        if (mapRoute !=null) {
+            mapRoute.removeRoute();
+        } else {
+            Log.v("n_log_aparu_driver", "mapboxMap == null 05");
         }
+        route = null;
+        if (mapboxMap !=null) {
+            mapboxMap.removeMarker(currentMarker);
+        }
+            currentMarker = null;
     }
 
     private void clearGeocodingResults() {
@@ -347,6 +357,8 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
                     if (geocodingMarker.getId() == marker.getId()) {
                         LatLng position = geocodingMarker.getPosition();
                         addPointToRoute(position.getLatitude(), position.getLongitude());
+                        Log.v("n_log_aparu_driver", "updateRouteAfterWaypointChange 02");
+
                         updateRouteAfterWaypointChange();
                         marker.hideInfoWindow();
                         return true;
@@ -370,6 +382,8 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
     @Override
     public void onMapLongClick(@NonNull LatLng point) {
         addPointToRoute(point.getLatitude(), point.getLongitude());
+        Log.v("n_log_aparu_driver", "updateRouteAfterWaypointChange 03");
+
         updateRouteAfterWaypointChange();
     }
 
@@ -477,6 +491,7 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
         } else {
             Point lastPoint = this.waypoints.get(this.waypoints.size() - 1);
             LatLng latLng = new LatLng(lastPoint.latitude(), lastPoint.longitude());
+            Log.v("n_log_aparu_driver", "updateRouteAfterWaypointChange latLng = " + String.valueOf(latLng));
             setCurrentMarkerPosition(latLng);
             if (this.waypoints.size() > 0) {
                 fetchRoute();
@@ -656,12 +671,20 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
     }
 
     private void animateCameraBbox(LatLngBounds bounds, int animationTime, int[] padding) {
-        CameraPosition position = mapboxMap.getCameraForLatLngBounds(bounds, padding);
-        mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), animationTime);
+        if (mapboxMap !=null) {
+            CameraPosition position = mapboxMap.getCameraForLatLngBounds(bounds, padding);
+            mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), animationTime);
+        } else {
+            Log.v("n_log_aparu_driver", "mapboxMap == null 03");
+        }
     }
 
     private void animateCamera(LatLng point) {
-        mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(point, DEFAULT_CAMERA_ZOOM), CAMERA_ANIMATION_DURATION);
+        if (mapboxMap !=null) {
+            mapboxMap.animateCamera(CameraUpdateFactory.newLatLngZoom(point, DEFAULT_CAMERA_ZOOM), CAMERA_ANIMATION_DURATION);
+        } else {
+            Log.v("n_log_aparu_driver", "mapboxMap == null 02");
+        }
     }
 
     private void setCurrentMarkerPosition(LatLng position) {
@@ -683,6 +706,7 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
         }
         clearRoute();
         this.waypoints = points;
+        Log.v("n_log_aparu_driver", "updateRouteAfterWaypointChange 04");
         updateRouteAfterWaypointChange();
     }
 
@@ -717,7 +741,15 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
 
             showLoading();
             String point = null;
-            LatLng pointLatLng = this.mapboxMap.getCameraPosition().target;
+            LatLng pointLatLng = null;
+            if (mapboxMap != null) {
+                pointLatLng = this.mapboxMap.getCameraPosition().target;
+            } else {
+                Log.v("n_log_aparu_driver", "mapboxMap == null 01");
+            }
+//            else {
+//                pointLatLng =
+//            }
             if (pointLatLng != null)
                 point = pointLatLng.getLatitude() + "," + pointLatLng.getLongitude();
             new FetchGeocodingTask(this, getString(R.string.gh_key)).execute(new FetchGeocodingConfig(currentGeocodingInput, getLanguageFromSharedPreferences().getLanguage(), 5, false, point, "default"));
@@ -732,6 +764,7 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
 
     @Override
     public void onPostExecuteGeocodingSearch(List<GeocodingLocation> locations) {
+        Log.v("n_log_aparu_driver", "onPostExecuteGeocodingSearch 00");
         clearGeocodingResults();
         markers = new ArrayList<>(locations.size());
 
@@ -777,7 +810,11 @@ public class NavigationLauncherActivity extends AppCompatActivity implements OnM
             if (!snippet.isEmpty())
                 markerOptions.snippet(snippet);
             markerOptions.icon(IconFactory.getInstance(this.getApplicationContext()).fromResource(R.drawable.ic_map_marker));
-            markers.add(mapboxMap.addMarker(markerOptions));
+            if (mapboxMap !=null) {
+                markers.add(mapboxMap.addMarker(markerOptions));
+            } else {
+                Log.v("n_log_aparu_driver", "mapboxMap == null 06");
+            }
         }
 
         // For bounds we need at least 2 entries
